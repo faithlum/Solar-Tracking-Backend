@@ -17,6 +17,12 @@ from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 import pandas as pd
 
+time_zone = None
+latitude = None
+longitude = None
+start_date = None
+duration = None
+opt_tilt_angle = None
 
 def find_inc_ang(beta, panel_az, el, az):
 
@@ -37,6 +43,7 @@ def find_inc_ang(beta, panel_az, el, az):
 
 
 def tilt_angle_req(request):
+    global time_zone, latitude, longitude, start_date, duration
     if request.method == 'POST':
         content_type = request.content_type
 
@@ -57,10 +64,10 @@ def tilt_angle_req(request):
 
                 # Perform calculations or call desired functions
                 # Example: Call the tilt_angle function with the received parameters
-                result = tilt_angle(time_zone, latitude,
+                opt_tilt_angle = tilt_angle(time_zone, latitude,
                                     longitude, start_date, duration)
 
-                return JsonResponse({'result': result})
+                return JsonResponse({'result': opt_tilt_angle})
 
             except json.JSONDecodeError:
                 # Handle JSON decoding error
@@ -108,8 +115,8 @@ def tilt_angle(time_zone, latitude, longitude, start_date, duration):
 
 
 def save_info(ser):
-    daylight_start_min, fitted_m, fitted_b = optimal_rotational_angle(
-        opt_date, opt_tilt_angle, time_zone, latitude, longitude)
+    file_name = "power_captured.csv"
+    daylight_start_min, fitted_m, fitted_b = optimal_rotational_angle(opt_date, opt_tilt_angle, time_zone, latitude, longitude)
 
     fitted_m = round(fitted_m, 3)
     fitted_b = round(fitted_b, 3)
@@ -132,44 +139,27 @@ def save_info(ser):
     ser.write(str(fitted_b).encode('utf-8'))
     ser.write(b'\n')
 
-    while(1):
-        getData = ser.readline()
-        data = getData.decode('utf-8')[:-2]
-        print(data)
+    file = open(file_name, 'a')
+    while(1): # get power data from arduino
+        getData=ser.readline()
+        power_string = getData.decode('utf-8')[:-2]
+        file.write(power_string) # current time, voltage, current, power
+        file.write('\n')
+        print(power_string)
 
 
-def accelerometerHorz():
-    horizontal_angle = 0
+def accelerometerHorz(ser):
+    getData=ser.readline()
+    horizontal_angle = float(getData.decode('utf-8')[:-2])
     return horizontal_angle
 
 
-def accelerometer(horizontal_angle):
-    # TODO: before running this function, we need to tell the user to put the hinge back to the horizontal position so we can get the angle for the horizontal and put it into horizontal_angle
-    # TODO: in the backend file, we need to set a max runtime for accelerometer
-    # TODO: we're at the right angle only if the abs(opt_tilt_angle - actual_angle) < MAX_ERROR ~0.5 for at least 4 times consecutively
-
-    # time.sleep(1)
-
-    # ports = serial.tools.list_ports.comports()
-    # for i, port in enumerate(ports):
-    #     if 'usb' in port.device:
-    #         usb_port = port.device
-
-    # comm_rate = 115200
-    # ser = serial.Serial(usb_port, comm_rate)
-
-    # getData=ser.readline()
-    # horizontal_angle = float(getData.decode('utf-8')[:-2])
-
-    absolute_tilt_arr = np.arange(0, 91, 0.5)
-
-    for absolute_tilt in absolute_tilt_arr:
-        actual_tilt = absolute_tilt - horizontal_angle
-        # getData=ser.readline()
-        # actual_tilt = (float(getData.decode('utf-8')[:-2]) - horizontal_angle + 180) % 360 - 180
+def accelerometer(ser, horizontal_angle):
+    while(True):
+        getData=ser.readline()
+        absolute_tilt = float(getData.decode('utf-8')[:-2])
+        actual_tilt = (absolute_tilt - horizontal_angle + 180) % 360 - 180
         yield actual_tilt
-
-        time.sleep(1)
 
 
 # def call_accelerometer(request):
