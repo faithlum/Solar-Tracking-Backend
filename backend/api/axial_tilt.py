@@ -23,6 +23,14 @@ from datetime import datetime, timedelta
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 
+time_zone = None
+latitude = None 
+longitude = None 
+start_date = None 
+duration = None
+opt_tilt_angle = None 
+opt_date = None
+
 def find_inc_ang(beta, panel_az, el, az):
 
     beta = np.radians(beta)
@@ -42,7 +50,7 @@ def find_inc_ang(beta, panel_az, el, az):
 
 
 def tilt_angle_req(request):
-    global time_zone, latitude, longitude, start_date, duration, opt_tilt_angle, opt_date
+    # global time_zone, latitude, longitude, start_date, duration, opt_tilt_angle, opt_date
     if request.method == 'POST':
         content_type = request.content_type
 
