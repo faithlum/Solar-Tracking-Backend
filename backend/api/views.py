@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import JsonResponse, StreamingHttpResponse, HttpResponse
 from .axial_tilt import accelerometer, accelerometerHorz, tilt_angle_req, save_info
+from .axial_tilt import time_zone
 from datetime import date
 import logging
 import json
@@ -49,15 +50,15 @@ def stream_output(request):
 
 def sse_close_notification(request):
     print("SSE stream closed")
+    print(time_zone)
 
+    # print("time_zone:", tilt_angle_req.time_zone)
+    # print("latitude:", tilt_angle_req.latitude)
+    # print("longitude:", tilt_angle_req.longitude)
+    # print("start_date:", tilt_angle_req.start_date)
+    # print("opt_date:", tilt_angle_req.opt_date)
+    # print("duration:", tilt_angle_req.duration)
+    # print("opt_tilt_angle:", tilt_angle_req.opt_tilt_angle)
 
-    print("time_zone:", tilt_angle_req.time_zone)
-    print("latitude:", tilt_angle_req.latitude)
-    print("longitude:", tilt_angle_req.longitude)
-    print("start_date:", tilt_angle_req.start_date)
-    print("opt_date:", tilt_angle_req.opt_date)
-    print("duration:", tilt_angle_req.duration)
-    print("opt_tilt_angle:", tilt_angle_req.opt_tilt_angle)
-
-    save_info(ser, time_zone, latitude, longitude, opt_date, opt_tilt_angle)
+    # save_info(ser, time_zone, latitude, longitude, opt_date, opt_tilt_angle)
     return HttpResponse(status=200)
