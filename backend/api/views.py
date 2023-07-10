@@ -1,12 +1,12 @@
 from django.shortcuts import render
 from django.http import JsonResponse, StreamingHttpResponse, HttpResponse
-from .axial_tilt import accelerometer, accelerometerHorz
+from .axial_tilt import accelerometer, accelerometerHorz, tilt_angle_req, save_info
 from datetime import date
 import logging
 import json
 import serial
 import serial.tools.list_ports
-from .axial_tilt import time_zone, latitude, longitude, start_date, duration, opt_tilt_angle
+ser = None
 
 # Create your views here.
 def test_function(request):
@@ -45,15 +45,19 @@ def stream_output(request):
     print("Streaming response created.")
     logging.debug("Streaming response created.")
 
-    print("time_zone:", time_zone)
-    print("latitude:", latitude)
-    print("longitude:", longitude)
-    print("start_date:", start_date)
-    print("duration:", duration)
-    print("opt_tilt_angle:", opt_tilt_angle)
-
     return response
 
 def sse_close_notification(request):
     print("SSE stream closed")
+
+
+    print("time_zone:", tilt_angle_req.time_zone)
+    print("latitude:", tilt_angle_req.latitude)
+    print("longitude:", tilt_angle_req.longitude)
+    print("start_date:", tilt_angle_req.start_date)
+    print("opt_date:", tilt_angle_req.opt_date)
+    print("duration:", tilt_angle_req.duration)
+    print("opt_tilt_angle:", tilt_angle_req.opt_tilt_angle)
+
+    save_info(ser, time_zone, latitude, longitude, opt_date, opt_tilt_angle)
     return HttpResponse(status=200)
