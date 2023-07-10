@@ -1,6 +1,5 @@
 from django.shortcuts import render
-from django.http import JsonResponse
-from django.http import StreamingHttpResponse
+from django.http import JsonResponse, StreamingHttpResponse, HttpResponse
 from .axial_tilt import accelerometer, accelerometerHorz
 from datetime import date
 import logging
@@ -54,3 +53,7 @@ def stream_output(request):
     print("opt_tilt_angle:", opt_tilt_angle)
 
     return response
+
+def sse_close_notification(request):
+    print("SSE stream closed")
+    return HttpResponse(status=200)
