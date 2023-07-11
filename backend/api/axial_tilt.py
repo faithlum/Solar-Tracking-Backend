@@ -167,7 +167,10 @@ def accelerometerHorz(ser):
 def accelerometer(ser, horizontal_angle):
     while(True):
         getData=ser.readline()
-        absolute_tilt = float(getData.decode('utf-8')[:-2])
+        try:
+            absolute_tilt = float(getData.decode('utf-8')[:-2])
+        except:
+            pass
         actual_tilt = (absolute_tilt - horizontal_angle + 180) % 360 - 180
         yield actual_tilt
 
