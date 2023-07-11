@@ -1,12 +1,13 @@
 from django.shortcuts import render
 from django.http import JsonResponse, StreamingHttpResponse, HttpResponse
-from .axial_tilt import accelerometer, accelerometerHorz, tilt_angle_req, save_info
-from .axial_tilt import time_zone, latitude, longitude, start_date, opt_date, duration, opt_tilt_angle
+from .axial_tilt import accelerometer, accelerometerHorz, tilt_angle_req, save_info, send_data_to_views
+# from .axial_tilt import time_zone, latitude, longitude, start_date, opt_date, duration, opt_tilt_angle
 from datetime import date
 import logging
 import json
 import serial
 import serial.tools.list_ports
+import datetime
 ser = None
 
 # Create your views here.
@@ -27,6 +28,7 @@ def setup():
     return ser
 
 def stream_output(request):
+    global ser
     ser = setup()
 
     def generate_output(ser):
@@ -51,13 +53,11 @@ def stream_output(request):
 def sse_close_notification(request):
     print("SSE stream closed")
 
-    print("time_zone:", time_zone)
-    print("latitude:", latitude)
-    print("longitude:", longitude)
-    print("start_date:", start_date)
-    print("opt_date:", opt_date)
-    print("duration:", duration)
-    print("opt_tilt_angle:", opt_tilt_angle)
+    time_zone, latitude, longitude, start_date, duration, opt_tilt_angle, opt_date_str = send_data_to_views()
 
-    # save_info(ser, time_zone, latitude, longitude, opt_date, opt_tilt_angle)
+    # temp_date = opt_date_str.split(" ")
+    # year, month, day = temp_date.split("-")
+    # opt_date = date(year, month, day)
+
+    save_info(ser, int(time_zone), float(latitude), float(longitude), opt_date_str, float(opt_tilt_angle))
     return HttpResponse(status=200)

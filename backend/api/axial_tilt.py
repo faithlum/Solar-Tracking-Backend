@@ -8,6 +8,7 @@ import time
 from datetime import datetime, timedelta, date
 from django.http import JsonResponse
 import json
+import pytz
 
 
 # sun position imports
@@ -18,8 +19,6 @@ import matplotlib.cm as cm
 import pandas as pd
 
 # from sun import sunPosition
-import numpy as np
-from datetime import datetime, timedelta
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 
@@ -50,7 +49,7 @@ def find_inc_ang(beta, panel_az, el, az):
 
 
 def tilt_angle_req(request):
-    # global time_zone, latitude, longitude, start_date, duration, opt_tilt_angle, opt_date
+    global time_zone, latitude, longitude, start_date, duration, opt_tilt_angle, opt_date
     if request.method == 'POST':
         content_type = request.content_type
 
@@ -83,6 +82,8 @@ def tilt_angle_req(request):
     # Return an error response for unsupported HTTP methods
     return JsonResponse({'error': 'Invalid request method'})
 
+def send_data_to_views():
+    return time_zone, latitude, longitude, start_date, duration, opt_tilt_angle, opt_date
 
 def tilt_angle(time_zone, latitude, longitude, start_date, duration):
     # if len(start_date.split("/")) != 3: #TODO: might need to put this to the backend file
@@ -128,7 +129,8 @@ def save_info(ser, time_zone, latitude, longitude, opt_date, opt_tilt_angle):
     fitted_m = round(fitted_m, 3)
     fitted_b = round(fitted_b, 3)
 
-    start_time = str(datetime.now().strftime("%m-%d-%Y-%H-%M-%S"))
+    start_time = str(datetime.now(pytz.timezone('Canada/Eastern')).strftime("%m-%d-%Y-%H-%M-%S"))
+    print("start_time in axial_tilt: " + start_time)
     ser.write(start_time.encode('utf-8'))
     ser.write(b'\n')
     ser.write(str(time_zone).encode('utf-8'))
@@ -146,12 +148,13 @@ def save_info(ser, time_zone, latitude, longitude, opt_date, opt_tilt_angle):
     ser.write(str(fitted_b).encode('utf-8'))
     ser.write(b'\n')
 
-    file = open(file_name, 'a')
     while(1): # get power data from arduino
+        file = open(file_name, 'a')
         getData=ser.readline()
         power_string = getData.decode('utf-8')[:-2]
         file.write(power_string) # current time, voltage, current, power
         file.write('\n')
+        file.close()
         print(power_string)
 
 
@@ -283,20 +286,20 @@ def line_best_fit(R):
     # Extract the fitted parameters
     fitted_m, fitted_b = fit_params
 
-    # Generate the curve using the fitted parameters
-    fitted_curve = linear_function(x, fitted_m, fitted_b)
+    # # Generate the curve using the fitted parameters
+    # fitted_curve = linear_function(x, fitted_m, fitted_b)
 
-    # Plot the original data and the fitted curve
-    plt.plot(x, R, 'ro', label='Original Data')
-    plt.plot(x, fitted_curve, 'b-', label='Fitted Curve')
-    plt.xlabel('Index')
-    plt.ylabel('R Values')
-    plt.legend()
-    plt.show()
+    # # Plot the original data and the fitted curve
+    # plt.plot(x, R, 'ro', label='Original Data')
+    # plt.plot(x, fitted_curve, 'b-', label='Fitted Curve')
+    # plt.xlabel('Index')
+    # plt.ylabel('R Values')
+    # plt.legend()
+    # plt.show()
 
-    # Print the equation of the fitted line
-    print("Equation of the fitted line:")
-    print("y =", fitted_m, "x +", fitted_b)
+    # # Print the equation of the fitted line
+    # print("Equation of the fitted line:")
+    # print("y =", fitted_m, "x +", fitted_b)
     return fitted_m, fitted_b
 
 
@@ -332,12 +335,16 @@ def optimal_rotational_angle(opt_date, beta_ax, time_zone=4, latitude=43.5, long
 
     # other inputs
     az_ax = 180 
+
     
     hrs = np.arange(0+time_zone,24+time_zone)
     mins = np.arange(0,60)
 
+
+
     pos_every_min = np.array([sunPosition(year,month,day,hr,mn,lat=latitude,long=longitude) 
         for hr,mn in zip(np.repeat(hrs,60),np.tile(mins,24))])
+
 
     daylight_start_min = next((i for i, value in enumerate(pos_every_min[:,1]) if value > 0), None)
 
@@ -348,14 +355,6 @@ def optimal_rotational_angle(opt_date, beta_ax, time_zone=4, latitude=43.5, long
 
     R = R_opt(beta_ax,az_ax,el,az)
 
-    print(el.shape)
-    print(R.shape)
-
     fitted_m, fitted_b = line_best_fit(R)
-
-    # print(f"Opt date: {optimal_date}")
-    # print(f"beta_ax: {beta_ax}")
-    # print(f"Slope: {fitted_m}")
-    # print(f"Intercept: {fitted_b}")
 
     return daylight_start_min, fitted_m, fitted_b
